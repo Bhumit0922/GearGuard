@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import AuthLayout from "./layouts/AuthLayout";
 import AppLayout from "./layouts/AppLayout";
@@ -10,25 +9,28 @@ import Signup from "./pages/auth/Signup";
 import ManagerDashboard from "./pages/manager/Dashboard";
 import TechnicianDashboard from "./pages/technician/Dashboard";
 import UserDashboard from "./pages/user/Dashboard";
+import CreateRequest from "@/pages/user/CreateRequest";
 
 import Equipment from "@/pages/manager/Equipment";
-import ProtectedRoute from "@/auth/ProtectedRoute";
+import Teams from "@/pages/manager/Teams";
 import Requests from "@/pages/manager/Requests";
-import RequestDetails from "@/pages/manager/RequestDetails";
+import RequestDetails from "@/pages/shared/RequestDetails";
+
+import ProtectedRoute from "@/auth/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+        {/* ================= PUBLIC ROUTES ================= */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
 
-        {/* Protected App Routes */}
+        {/* ================= PROTECTED APP ================= */}
         <Route element={<AppLayout />}>
-          {/* Manager */}
+          {/* ---------- MANAGER ---------- */}
           <Route
             path="/manager/dashboard"
             element={
@@ -65,7 +67,16 @@ export default function App() {
             }
           />
 
-          {/* Technician */}
+          <Route
+            path="/manager/teams"
+            element={
+              <ProtectedRoute allowedRoles={["manager"]}>
+                <Teams />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ---------- TECHNICIAN ---------- */}
           <Route
             path="/technician/dashboard"
             element={
@@ -75,7 +86,25 @@ export default function App() {
             }
           />
 
-          {/* User */}
+          <Route
+            path="/technician/requests"
+            element={
+              <ProtectedRoute allowedRoles={["technician"]}>
+                <Requests />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/technician/requests/:id"
+            element={
+              <ProtectedRoute allowedRoles={["technician"]}>
+                <RequestDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ---------- USER ---------- */}
           <Route
             path="/user/dashboard"
             element={
@@ -84,14 +113,38 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/user/requests"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <Requests />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/user/requests/:id"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <RequestDetails />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
-        {/* Fallback */}
+        <Route
+          path="/user/requests/new"
+          element={
+            <ProtectedRoute allowedRoles={["user"]}>
+              <CreateRequest />
+            </ProtectedRoute>
+          }
+        />
 
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* ================= FALLBACK ================= */}
         <Route path="*" element={<Navigate to="/login" replace />} />
-
       </Routes>
     </BrowserRouter>
   );

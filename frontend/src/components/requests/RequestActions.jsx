@@ -1,26 +1,32 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { assignTechnician, scrapRequest } from "@/api/requests";
-import { useAuth } from "@/auth/useAuth";
+import { scrapRequest } from "@/api/requests";
+import { toast } from "sonner";
 
-export default function RequestActions({ request }) {
-    const { user } = useAuth();
+export default function RequestActions({ request, onUpdated }) {
+    const [loading, setLoading] = useState(false);
 
-    if (user.role !== "manager") return null;
+    const handleScrap = async () => {
+        setLoading(true);
+        try {
+            await scrapRequest(request.id);
+            toast.success("Request scrapped");
+            onUpdated?.();
+        } catch {
+            toast.error("Failed to scrap request");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="flex gap-3">
             <Button
-                variant="outline"
-                onClick={() => assignTechnician(request.id)}
-            >
-                Assign Technician
-            </Button>
-
-            <Button
                 variant="destructive"
-                onClick={() => scrapRequest(request.id)}
+                onClick={handleScrap}
+                disabled={loading}
             >
-                Scrap Request
+                {loading ? "Scrapping..." : "Scrap Request"}
             </Button>
         </div>
     );

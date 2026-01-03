@@ -1,87 +1,108 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import api from "@/api/axios";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchEquipment, scrapEquipment } from "@/api/equipment";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useAuth } from "@/auth/useAuth";
 
-export default function RequestDetails() {
-  const { id } = useParams();
-  const [request, setRequest] = useState(null);
-  const [logs, setLogs] = useState([]);
+
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+export default function Equipment() {
+  const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    async function fetchDetails() {
-      try {
-        const res = await api.get(`/requests/${id}`);
-        const logRes = await api.get(`/requests/${id}/logs`);
+    fetchEquipment()
+      .then(setEquipment)
+      .finally(() => setLoading(false));
+  }, []);
 
-        setRequest(res.data.data);
-        setLogs(logRes.data.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+  const handleScrap = async (id) => {
+    try {
+      const result = await scrapEquipment(id);
+
+      setEquipment((prev) => prev.filter((e) => e.id !== id));
+
+      toast.success(
+        `Equipment scrapped. ${result?.closedRequests || 0} request(s) auto-closed.`
+      );
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to scrap equipment");
     }
+  };
 
-    fetchDetails();
-  }, [id]);
-
-  if (loading) return <p>Loading request...</p>;
-  if (!request) return <p>Request not found</p>;
+  if (loading) return <p>Loading equipment...</p>;
 
   return (
-    <div className="space-y-6">
-      {/* REQUEST SUMMARY */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {request.subject}
-            <Badge>{request.status}</Badge>
-          </CardTitle>
-        </CardHeader>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">Equipment</h1>
 
-        <CardContent className="space-y-2 text-sm">
-          <p><strong>Type:</strong> {request.type}</p>
-          <p><strong>Equipment ID:</strong> {request.equipment_id}</p>
-          <p><strong>Assigned Technician:</strong> {request.assigned_technician_id ?? "Not assigned"}</p>
-          <p><strong>Created At:</strong> {new Date(request.created_at).toLocaleString()}</p>
-        </CardContent>
-      </Card>
+      <Table>
+        <TableCaption>A list of all active equipment.</TableCaption>
 
-      {/* AUDIT LOG */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Status History</CardTitle>
-        </CardHeader>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Serial</TableHead>
+            <TableHead>Department</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Warranty</TableHead>
+            {user?.role === "manager" && (
+              <TableHead className="text-right">Actions</TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
 
-        <CardContent className="space-y-3">
-          {logs.length === 0 && (
-            <p className="text-muted-foreground text-sm">
-              No status changes yet.
-            </p>
-          )}
+        <TableBody>
+          {equipment.map((item) => {
+            const isUnderWarranty =
+              item.warranty_expiry &&
+              new Date(item.warranty_expiry) > new Date();
 
-          {logs.map((log) => (
-            <div key={log.id}>
-              <div className="flex justify-between text-sm">
-                <span>
-                  {log.old_status} → <strong>{log.new_status}</strong>
-                </span>
-                <span className="text-muted-foreground">
-                  {log.changed_by_name}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {new Date(log.changed_at).toLocaleString()}
-              </p>
-              <Separator className="my-2" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            return (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell>{item.serial_number}</TableCell>
+                <TableCell>{item.department || "—"}</TableCell>
+                <TableCell>{item.location || "—"}</TableCell>
+                <TableCell>
+                  {isUnderWarranty ? (
+                    <Badge className="bg-green-600 text-white">
+                      Under Warranty
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      Warranty Expired
+                    </Badge>
+                  )}
+                </TableCell>
+
+                {user?.role === "manager" && (
+                  <TableCell className="text-right">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleScrap(item.id)}
+                    >
+                      Scrap
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

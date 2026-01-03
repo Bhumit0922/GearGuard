@@ -1,3 +1,60 @@
+import { useEffect, useState } from "react";
+import { fetchManagerDashboard } from "@/api/dashboard";
+import StatCard from "@/components/dashboard/StatCard";
+import RecentRequests from "@/components/dashboard/RecentRequests";
+import { toast } from "sonner";
+import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import PageHeader from "@/components/PageHeader";
+
 export default function ManagerDashboard() {
-  return <h1>Manager Dashboard</h1>;
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const res = await fetchManagerDashboard();
+        setData(res);
+      } catch {
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!data) {
+    return <p className="text-muted-foreground">No dashboard data available.</p>;
+  }
+
+  const { stats, recentRequests } = data;
+
+  return (
+    <div className="space-y-6">
+      {/* HEADER */}
+      <PageHeader
+        title="Manager Dashboard"
+        subtitle="Overview of equipment and maintenance"
+      />
+
+      {/* KPI GRID */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <StatCard title="Active Equipment" value={stats.equipment} />
+        <StatCard title="Open Requests" value={stats.openRequests} />
+        <StatCard title="Completed Requests" value={stats.completedRequests} />
+      </div>
+
+      {/* RECENT REQUESTS */}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Recent Requests</h2>
+        <RecentRequests requests={recentRequests} />
+      </div>
+    </div>
+  );
 }

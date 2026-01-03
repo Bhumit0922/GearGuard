@@ -69,32 +69,46 @@ export const createRequest = asyncHandler(async (req, res) => {
 /**
  * GET ALL REQUESTS (Kanban View)
  */
+
 export const getAllRequests = asyncHandler(async (req, res) => {
   const { status, type } = req.query;
   const { role, team_id, id } = req.user;
 
-  let query = `SELECT * FROM maintenance_requests WHERE 1=1`;
+  let query = `
+    SELECT 
+      r.id,
+      r.subject,
+      r.status,
+      r.type,
+      r.created_at,
+      e.name AS equipment_name
+    FROM maintenance_requests r
+    JOIN equipment e ON r.equipment_id = e.id
+    WHERE 1=1
+  `;
   const values = [];
 
   if (role === "user") {
-    query += " AND created_by = ?";
+    query += " AND r.created_by = ?";
     values.push(id);
   }
 
-  if (role === "technician" || role === "manager") {
-    query += " AND team_id = ?";
+  if (role === "manager" || role === "technician") {
+    query += " AND r.team_id = ?";
     values.push(team_id);
   }
 
   if (status) {
-    query += " AND status = ?";
+    query += " AND r.status = ?";
     values.push(status);
   }
 
   if (type) {
-    query += " AND type = ?";
+    query += " AND r.type = ?";
     values.push(type);
   }
+
+  query += " ORDER BY r.created_at DESC";
 
   const [rows] = await pool.query(query, values);
 
@@ -384,4 +398,67 @@ export const getRequestLogs = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json(new ApiResponse(200, logs));
+});
+
+/**
+ * GET SINGLE REQUEST DETAILS (User / Technician / Manager)
+ */
+export const getRequestById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role, id: userId, team_id } = req.user;
+
+  // 1️⃣ Fetch request with equipment info
+  const [[request]] = await pool.query(
+    `
+    SELECT 
+      r.*,
+      e.name AS equipment_name
+    FROM maintenance_requests r
+    JOIN equipment e ON r.equipment_id = e.id
+    WHERE r.id = ?
+    `,
+    [id]
+  );
+
+  if (!request) {
+    throw new ApiError(404, "Request not found");
+  }
+
+  // 2️⃣ Authorization rules
+  if (role === "user" && request.created_by !== userId) {
+    throw new ApiError(403, "Not authorized to view this request");
+  }
+
+  if (role === "technician" && request.assigned_technician_id !== userId) {
+    throw new ApiError(403, "Not assigned to this request");
+  }
+
+  if (role === "manager" && request.team_id !== team_id) {
+    throw new ApiError(403, "Not authorized for this team");
+  }
+
+  // 3️⃣ Fetch audit logs
+  const [logs] = await pool.query(
+    `
+    SELECT 
+      rl.id,
+      rl.old_status,
+      rl.new_status,
+      rl.changed_at,
+      u.name AS changed_by_name
+    FROM request_logs rl
+    JOIN users u ON rl.changed_by = u.id
+    WHERE rl.request_id = ?
+    ORDER BY rl.changed_at ASC
+    `,
+    [id]
+  );
+
+  // 4️⃣ Final response
+  res.status(200).json(
+    new ApiResponse(200, {
+      ...request,
+      logs,
+    })
+  );
 });

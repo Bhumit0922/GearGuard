@@ -8,6 +8,8 @@ import {
   completeRequest,
   scrapRequest,
   getPreventiveCalendar,
+  getRequestById,
+  getRequestLogs,
 } from "../controllers/request.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
@@ -15,9 +17,13 @@ import { authorize } from "../middlewares/role.middleware.js";
 const requestRoute = express.Router();
 
 requestRoute.post("/", authenticate, createRequest);
-requestRoute.get("/", getAllRequests);
+requestRoute.get("/", authenticate, getAllRequests);
 
-requestRoute.get("/equipment/:equipmentId", getRequestsByEquipment);
+requestRoute.get(
+  "/equipment/:equipmentId",
+  authenticate,
+  getRequestsByEquipment
+);
 requestRoute.get("/calendar", getPreventiveCalendar);
 
 requestRoute.patch(
@@ -44,5 +50,8 @@ requestRoute.patch(
   authorize("manager"),
   scrapRequest
 );
+
+requestRoute.get("/:id", authenticate, getRequestById);
+requestRoute.get("/:id/logs", authenticate, getRequestLogs);
 
 export default requestRoute;

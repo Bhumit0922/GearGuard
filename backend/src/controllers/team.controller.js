@@ -14,36 +14,52 @@ export const createTeam = asyncHandler(async (req, res) => {
   }
 
   // Prevent duplicate teams
-  const [[existing]] = await pool.query(
-    "SELECT id FROM teams WHERE name = ?",
-    [name]
-  );
+  const [[existing]] = await pool.query("SELECT id FROM teams WHERE name = ?", [
+    name,
+  ]);
 
   if (existing) {
     throw new ApiError(409, "Team already exists");
   }
 
-  const [result] = await pool.query(
-    "INSERT INTO teams (name) VALUES (?)",
-    [name]
-  );
+  const [result] = await pool.query("INSERT INTO teams (name) VALUES (?)", [
+    name,
+  ]);
 
-  res.status(201).json(
-    new ApiResponse(
-      201,
-      { id: result.insertId, name },
-      "Team created successfully"
-    )
-  );
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        { id: result.insertId, name },
+        "Team created successfully"
+      )
+    );
 });
 
 /**
  * GET ALL TEAMS
  */
 export const getAllTeams = asyncHandler(async (req, res) => {
-  const [rows] = await pool.query(
-    "SELECT id, name FROM teams ORDER BY name"
-  );
+  const [rows] = await pool.query("SELECT id, name FROM teams ORDER BY name");
 
   res.status(200).json(new ApiResponse(200, rows));
+});
+
+export const assignTechnicianToTeam = asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const { technicianId } = req.body;
+
+  if (!technicianId) {
+    throw new ApiError(400, "Technician ID required");
+  }
+
+  await pool.query(
+    "UPDATE users SET team_id = ? WHERE id = ? AND role = 'technician'",
+    [teamId, technicianId]
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Technician assigned to team"));
 });

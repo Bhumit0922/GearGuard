@@ -7,12 +7,18 @@ import {
   loginUser,
   getTechnicians,
   createTechnician,
+  refreshAccessToken,
+  logoutUser,
 } from "../controllers/users.controller.js";
 
 const userRouter = express.Router();
 
 userRouter.post("/signup", signupUser);
 userRouter.post("/login", loginUser);
+
+userRouter.post("/refresh", refreshAccessToken);
+userRouter.post("/logout", logoutUser);
+
 userRouter.get(
   "/technicians",
   authenticate,
@@ -25,5 +31,6 @@ userRouter.post(
   authorize("manager"),
   createTechnician
 );
+
 
 export default userRouter;

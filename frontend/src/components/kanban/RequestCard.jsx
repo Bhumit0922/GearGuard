@@ -1,24 +1,14 @@
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export default function RequestCard({ request }) {
-    const { attributes, listeners, setNodeRef, transform } = useDraggable({
-        id: request.id,
-    });
-
-    const style = {
-        transform: CSS.Translate.toString(transform),
-    };
-
+export default function KanbanCard({ request }) {
     return (
         <Card
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            {...attributes}
-            className="p-3 space-y-2 cursor-grab"
+            className="
+            p-3 space-y-2 cursor-grab
+            transition-transform duration-200 ease-out
+            hover:shadow-md
+            "
         >
             <div className="font-medium">{request.subject}</div>
 

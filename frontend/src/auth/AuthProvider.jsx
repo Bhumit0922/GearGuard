@@ -15,7 +15,9 @@ export function AuthProvider({ children }) {
 
             setUser(user);
             setAccessToken(accessToken);
+            localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);
+
 
             toast.success("Login successful");
             return user;
@@ -33,6 +35,7 @@ export function AuthProvider({ children }) {
             }
         } finally {
             localStorage.removeItem("refreshToken");
+            localStorage.removeItem("accessToken");
             setUser(null);
             setAccessToken(null);
             toast.success("Logged out");
@@ -52,6 +55,7 @@ export function AuthProvider({ children }) {
             const { accessToken } = res.data.data;
 
             setAccessToken(accessToken);
+            localStorage.setItem("accessToken", accessToken);
 
             const payload = JSON.parse(atob(accessToken.split(".")[1]));
             setUser({
@@ -61,9 +65,12 @@ export function AuthProvider({ children }) {
             });
         } catch {
             localStorage.removeItem("refreshToken");
+            localStorage.removeItem("accessToken");
             setUser(null);
             setAccessToken(null);
-        } finally {
+            toast.error("Session expired. Please login again.");
+        }
+        finally {
             setLoading(false);
         }
     };

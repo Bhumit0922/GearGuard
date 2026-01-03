@@ -1,14 +1,14 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import ApiError from "./utils/ApiError.js";
 import userRouter from "./routes/users.routes.js";
 import equipmentRouter from "./routes/equipment.routes.js";
 import requestRoute from "./routes/request.routes.js";
 import teamRouter from "./routes/team.routes.js";
-
+import dashboardRouter from "./routes/dashboard.routes.js";
 
 const app = express();
+console.log("✅ App booting...");
 
 app.use(cors());
 app.use(express.json());
@@ -17,7 +17,7 @@ app.use("/api/users", userRouter);
 app.use("/api/equipment", equipmentRouter);
 app.use("/api/requests", requestRoute);
 app.use("/api/teams", teamRouter);
-
+app.use("/api/dashboard", dashboardRouter);
 
 // Health check (optional but nice)
 app.get("/health", (req, res) => {
