@@ -9,6 +9,7 @@ import {
   createTechnician,
   refreshAccessToken,
   logoutUser,
+  createManager,
 } from "../controllers/users.controller.js";
 
 const userRouter = express.Router();
@@ -32,5 +33,6 @@ userRouter.post(
   createTechnician
 );
 
+userRouter.post("/managers", authenticate, authorize("manager"), createManager);
 
 export default userRouter;

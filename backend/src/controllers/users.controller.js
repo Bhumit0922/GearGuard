@@ -175,6 +175,65 @@ export const createTechnician = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Manager creates another manager (WITH TEAM)
+ */
+export const createManager = asyncHandler(async (req, res) => {
+  const { name, email, password, teamId } = req.body;
+
+  if (!name || !email || !password || !teamId) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Check team exists
+  const [[team]] = await pool.query("SELECT id FROM teams WHERE id = ?", [
+    teamId,
+  ]);
+
+  if (!team) {
+    throw new ApiError(404, "Team not found");
+  }
+
+  // Check email
+  const [[existing]] = await pool.query(
+    "SELECT id FROM users WHERE email = ?",
+    [email]
+  );
+
+  if (existing) {
+    throw new ApiError(409, "Email already exists");
+  }
+
+  if (!passwordRegex.test(password)) {
+    throw new ApiError(
+      400,
+      "Password must contain lowercase, uppercase, special character and be at least 8 characters long"
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const [result] = await pool.query(
+    `INSERT INTO users (name, email, password, role, team_id)
+     VALUES (?, ?, ?, 'manager', ?)`,
+    [name, email, hashedPassword, teamId]
+  );
+
+  res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        id: result.insertId,
+        name,
+        email,
+        role: "manager",
+        team_id: teamId,
+      },
+      "Manager created successfully"
+    )
+  );
+});
+
+/**
  * REFRESH ACCESS TOKEN
  */
 export const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -220,3 +279,13 @@ export const logoutUser = asyncHandler(async (req, res) => {
 
   res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
 });
+
+// export {
+//   signupUser,
+//   loginUser,
+//   getTechnicians,
+//   createTechnician,
+//   createManager, // 👈 ADD THIS
+//   refreshAccessToken,
+//   logoutUser,
+// };

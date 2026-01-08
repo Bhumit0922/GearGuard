@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import TeamCard from "@/components/teams/TeamCard";
 import CreateTeamModal from "@/components/teams/CreateTeamModal";
+import CreateManagerModal from "@/components/teams/CreateManagerModal";
 import { fetchTeams } from "@/api/teams";
 import { Button } from "@/components/ui/button";
 
 export default function Teams() {
   const [teams, setTeams] = useState([]);
   const [open, setOpen] = useState(false);
+  const [openManager, setOpenManager] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -18,7 +20,6 @@ export default function Teams() {
     };
 
     load();
-
     return () => {
       mounted = false;
     };
@@ -31,8 +32,19 @@ export default function Teams() {
         subtitle="Manage maintenance teams and technicians"
       />
 
-      <Button onClick={() => setOpen(true)}>Create Team</Button>
+      {/* 🔘 ACTION BUTTONS */}
+      <div className="flex gap-3">
+        <Button onClick={() => setOpen(true)}>Create Team</Button>
 
+        <Button
+          variant="outline"
+          onClick={() => setOpenManager(true)}
+        >
+          Create Manager
+        </Button>
+      </div>
+
+      {/* 🧩 TEAM LIST */}
       <div className="grid md:grid-cols-2 gap-4">
         {teams.map((team) => (
           <TeamCard
@@ -45,12 +57,16 @@ export default function Teams() {
         ))}
       </div>
 
+      {/* 🧩 MODALS */}
       <CreateTeamModal
         open={open}
         onClose={() => setOpen(false)}
-        onCreated={() => {
-          fetchTeams().then(setTeams);
-        }}
+        onCreated={() => fetchTeams().then(setTeams)}
+      />
+
+      <CreateManagerModal
+        open={openManager}
+        onClose={() => setOpenManager(false)}
       />
     </div>
   );
