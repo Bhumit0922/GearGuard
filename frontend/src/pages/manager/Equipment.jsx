@@ -89,11 +89,12 @@ export default function Equipment() {
                                             onUpdated={reloadEquipment}
                                         />
                                     ) : (
-                                        <span className="text-muted-foreground text-sm">
-                                            —
+                                        <span className="text-sm text-muted-foreground">
+                                            {item.maintenance_team_name || "Not assigned"}
                                         </span>
                                     )}
                                 </TableCell>
+
                             </TableRow>
                         );
                     })}

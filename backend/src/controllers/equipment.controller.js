@@ -57,15 +57,17 @@ export const getAllEquipment = asyncHandler(async (req, res) => {
   const { role, team_id } = req.user;
 
   let query = `
-    SELECT 
-      id,
-      name,
-      serial_number,
-      department,
-      location,
-      warranty_expiry
-    FROM equipment
-    WHERE IFNULL(is_scrapped, 0) = 0
+    SELECT
+      e.id,
+      e.name,
+      e.serial_number,
+      e.department,
+      e.location,
+      e.warranty_expiry,
+      t.name AS team_name
+    FROM equipment e
+    JOIN teams t ON e.maintenance_team_id = t.id
+    WHERE IFNULL(e.is_scrapped, 0) = 0
   `;
   const values = [];
 

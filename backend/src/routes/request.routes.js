@@ -24,7 +24,13 @@ requestRoute.get(
   authenticate,
   getRequestsByEquipment
 );
-requestRoute.get("/calendar", getPreventiveCalendar);
+
+requestRoute.get(
+  "/calendar",
+  authenticate,
+  authorize("manager", "technician"),
+  getPreventiveCalendar
+);
 
 requestRoute.patch(
   "/:id/assign",
@@ -51,7 +57,7 @@ requestRoute.patch(
   scrapRequest
 );
 
-requestRoute.get("/:id", authenticate, getRequestById);
 requestRoute.get("/:id/logs", authenticate, getRequestLogs);
+requestRoute.get("/:id", authenticate, getRequestById);
 
 export default requestRoute;

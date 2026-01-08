@@ -52,28 +52,23 @@ export function AuthProvider({ children }) {
 
         try {
             const res = await api.post("/users/refresh", { refreshToken });
-            const { accessToken } = res.data.data;
+            const { accessToken, user } = res.data.data;
 
             setAccessToken(accessToken);
-            localStorage.setItem("accessToken", accessToken);
+            setUser(user); // ✅ FULL USER OBJECT
 
-            const payload = JSON.parse(atob(accessToken.split(".")[1]));
-            setUser({
-                id: payload.id,
-                role: payload.role,
-                team_id: payload.team_id,
-            });
+            localStorage.setItem("accessToken", accessToken);
         } catch {
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("accessToken");
             setUser(null);
             setAccessToken(null);
             toast.error("Session expired. Please login again.");
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         bootstrapAuth();

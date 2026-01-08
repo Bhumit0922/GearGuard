@@ -20,7 +20,6 @@ export default function UserRequests({ requests }) {
         );
     }
 
-
     return (
         <Table>
             <TableHeader>
@@ -28,6 +27,7 @@ export default function UserRequests({ requests }) {
                     <TableHead>Subject</TableHead>
                     <TableHead>Equipment</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Technician</TableHead>
                     <TableHead></TableHead>
                 </TableRow>
             </TableHeader>
@@ -40,6 +40,7 @@ export default function UserRequests({ requests }) {
                         <TableCell>
                             <Badge variant="outline">{r.status}</Badge>
                         </TableCell>
+                        <TableCell>{r.technician_name || "—"}</TableCell>
                         <TableCell>
                             <Link
                                 to={`/user/requests/${r.id}`}

@@ -20,7 +20,6 @@ export default function TechnicianTasks({ requests }) {
         );
     }
 
-
     return (
         <Table>
             <TableHeader>
@@ -28,6 +27,7 @@ export default function TechnicianTasks({ requests }) {
                     <TableHead>Subject</TableHead>
                     <TableHead>Equipment</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Team</TableHead>
                     <TableHead></TableHead>
                 </TableRow>
             </TableHeader>
@@ -40,6 +40,7 @@ export default function TechnicianTasks({ requests }) {
                         <TableCell>
                             <Badge variant="outline">{r.status}</Badge>
                         </TableCell>
+                        <TableCell>{r.team_name || "—"}</TableCell>
                         <TableCell>
                             <Link
                                 to={`/technician/requests/${r.id}`}

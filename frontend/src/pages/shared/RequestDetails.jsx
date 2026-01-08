@@ -9,7 +9,7 @@ import TechnicianActions from "@/components/requests/TechnicianActions";
 import ManagerActions from "@/components/requests/ManagerActions";
 import RequestDetailsSkeleton from "@/components/dashboard/RequestDetailsSkeleton";
 import ErrorState from "@/components/ui/ErrorState";
-
+import PageHeader from "@/components/PageHeader";
 export default function RequestDetails() {
     const { id } = useParams();
     const { user } = useAuth();

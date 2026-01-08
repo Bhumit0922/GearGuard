@@ -56,7 +56,7 @@ export default function AssignTeamCell({ equipment, onUpdated }) {
             <Button
                 size="sm"
                 onClick={handleAssign}
-                disabled={loading || !selected}
+                disabled={loading || !selected }
             >
                 {loading ? "Saving..." : "Assign"}
             </Button>

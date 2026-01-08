@@ -6,6 +6,7 @@ import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function UserDashboard() {
   const [data, setData] = useState(null);

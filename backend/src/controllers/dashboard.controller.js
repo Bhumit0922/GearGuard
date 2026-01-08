@@ -82,28 +82,31 @@ export const technicianDashboard = asyncHandler(async (req, res) => {
   // Recent assigned requests
   const [recentRequests] = await pool.query(
     `SELECT 
-        r.id,
-        r.subject,
-        r.status,
-        r.type,
-        r.created_at,
-        e.name AS equipment_name
-     FROM maintenance_requests r
-     JOIN equipment e ON r.equipment_id = e.id
-     WHERE r.assigned_technician_id = ?
-     ORDER BY r.created_at DESC
-     LIMIT 5`,
+      r.id,
+      r.subject,
+      r.status,
+      r.type,
+      r.created_at,
+      e.name AS equipment_name,
+      t.name AS team_name
+   FROM maintenance_requests r
+   JOIN equipment e ON r.equipment_id = e.id
+   JOIN teams t ON r.team_id = t.id
+   WHERE r.assigned_technician_id = ?
+   ORDER BY r.created_at DESC
+   LIMIT 5`,
     [technicianId]
   );
 
   res.status(200).json(
     new ApiResponse(200, {
       stats: {
-        assigned: assignedCount.total,
+        totalAssigned: assignedCount.total,
         inProgress: inProgressCount.total,
         completed: completedCount.total,
+        dueToday: 0,
       },
-      recentRequests,
+      myRequests: recentRequests,
     })
   );
 });
@@ -132,13 +135,19 @@ export const userDashboard = asyncHandler(async (req, res) => {
   );
 
   const [myRequests] = await pool.query(
-    `SELECT r.id, r.subject, r.status, r.type, r.created_at,
-            e.name AS equipment_name
-     FROM maintenance_requests r
-     JOIN equipment e ON r.equipment_id = e.id
-     WHERE r.created_by = ?
-     ORDER BY r.created_at DESC
-     LIMIT 5`,
+    `SELECT 
+      r.id,
+      r.subject,
+      r.status,
+      r.type,
+      r.created_at,
+      e.name AS equipment_name,
+      u.name AS technician_name
+    FROM maintenance_requests r
+    JOIN equipment e ON r.equipment_id = e.id
+    LEFT JOIN users u ON r.assigned_technician_id = u.id
+    WHERE r.created_by = ?
+`,
     [userId]
   );
 

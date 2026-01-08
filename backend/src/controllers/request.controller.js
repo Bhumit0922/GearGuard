@@ -75,17 +75,21 @@ export const getAllRequests = asyncHandler(async (req, res) => {
   const { role, team_id, id } = req.user;
 
   let query = `
-    SELECT 
-      r.id,
-      r.subject,
-      r.status,
-      r.type,
-      r.created_at,
-      e.name AS equipment_name
-    FROM maintenance_requests r
-    JOIN equipment e ON r.equipment_id = e.id
-    WHERE 1=1
-  `;
+  SELECT
+    r.id,
+    r.subject,
+    r.status,
+    r.type,
+    r.created_at,
+    e.name AS equipment_name,
+    t.name AS team_name,
+    u.name AS technician_name
+  FROM maintenance_requests r
+  JOIN equipment e ON r.equipment_id = e.id
+  JOIN teams t ON r.team_id = t.id
+  LEFT JOIN users u ON r.assigned_technician_id = u.id
+  WHERE 1=1
+`;
   const values = [];
 
   if (role === "user") {
@@ -123,16 +127,45 @@ export const getRequestsByEquipment = asyncHandler(async (req, res) => {
 
   if (req.user.role === "user") {
     const [rows] = await pool.query(
-      `SELECT * FROM maintenance_requests 
-       WHERE equipment_id = ? AND created_by = ?`,
+      `SELECT
+    r.id,
+    r.subject,
+    r.status,
+    r.type,
+    r.created_at,
+    e.name AS equipment_name,
+    u.name AS technician_name
+  FROM maintenance_requests r
+  JOIN equipment e ON r.equipment_id = e.id
+  LEFT JOIN users u ON r.assigned_technician_id = u.id
+  WHERE r.equipment_id = ?
+    AND r.created_by = ?
+  ORDER BY r.created_at DESC
+`,
       [equipmentId, req.user.id]
     );
+
     return res.status(200).json(new ApiResponse(200, rows));
   }
 
   const [rows] = await pool.query(
-    `SELECT * FROM maintenance_requests 
-     WHERE equipment_id = ? AND team_id = ?`,
+    `SELECT
+      r.id,
+      r.subject,
+      r.status,
+      r.type,
+      r.created_at,
+      e.name AS equipment_name,
+      u.name AS technician_name,
+      t.name AS team_name
+   FROM maintenance_requests r
+   JOIN equipment e ON r.equipment_id = e.id
+   JOIN teams t ON r.team_id = t.id
+   LEFT JOIN users u ON r.assigned_technician_id = u.id
+   WHERE r.equipment_id = ?
+     AND r.team_id = ?
+   ORDER BY r.created_at DESC
+  `,
     [equipmentId, req.user.team_id]
   );
 
@@ -377,8 +410,18 @@ export const scrapRequest = asyncHandler(async (req, res) => {
  */
 export const getPreventiveCalendar = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
-    `SELECT * FROM maintenance_requests
-     WHERE type = 'Preventive' AND team_id = ?`,
+    `SELECT
+        r.id,
+        r.subject,
+        r.status,
+        r.scheduled_date,
+        e.name AS equipment_name
+     FROM maintenance_requests r
+     JOIN equipment e ON r.equipment_id = e.id
+     WHERE r.type = 'Preventive'
+       AND r.team_id = ?
+     ORDER BY r.scheduled_date ASC
+    `,
     [req.user.team_id]
   );
 
@@ -409,12 +452,17 @@ export const getRequestById = asyncHandler(async (req, res) => {
 
   // 1️⃣ Fetch request with equipment info
   const [[request]] = await pool.query(
-    `
-    SELECT 
+    `SELECT 
       r.*,
-      e.name AS equipment_name
+      e.name AS equipment_name,
+      tech.name AS technician_name,
+      t.name AS team_name,
+      creator.name AS created_by_name
     FROM maintenance_requests r
     JOIN equipment e ON r.equipment_id = e.id
+    LEFT JOIN users tech ON r.assigned_technician_id = tech.id
+    JOIN teams t ON r.team_id = t.id
+    JOIN users creator ON r.created_by = creator.id
     WHERE r.id = ?
     `,
     [id]
