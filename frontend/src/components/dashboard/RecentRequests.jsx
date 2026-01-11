@@ -7,6 +7,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function RecentRequests({ requests }) {
     if (requests.length === 0) {
@@ -34,7 +35,8 @@ export default function RecentRequests({ requests }) {
                         <TableCell className="font-medium">{r.subject}</TableCell>
                         <TableCell>{r.equipment_name}</TableCell>
                         <TableCell>
-                            <Badge variant="outline">{r.status}</Badge>
+                            {/* <Badge variant="outline">{r.status}</Badge> */}
+                            <StatusBadge status={r.status} />
                         </TableCell>
                         <TableCell>{r.type}</TableCell>
                     </TableRow>

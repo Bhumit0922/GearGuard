@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +12,12 @@ import { fetchTeams } from "@/api/teams";
 // import api from "@/api/axios";
 import { createManager } from "@/api/users";
 import { toast } from "sonner";
-import { DialogTitle } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function CreateManagerModal({ open, onClose }) {
     const [teams, setTeams] = useState([]);
@@ -70,10 +74,12 @@ export default function CreateManagerModal({ open, onClose }) {
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="space-y-4">
-                {/* <h2 className="text-lg font-semibold">Create Manager</h2> */}
-                <DialogTitle className="text-lg font-semibold">
-                    Create Manager
-                </DialogTitle>
+
+                {/* REQUIRED FOR ACCESSIBILITY */}
+                <DialogTitle>Create Manager</DialogTitle>
+                <DialogDescription>
+                    Create a new manager and assign them to a maintenance team.
+                </DialogDescription>
 
                 {/* Name */}
                 <Input
@@ -127,11 +133,19 @@ export default function CreateManagerModal({ open, onClose }) {
                 {/* Submit */}
                 <Button
                     onClick={submit}
-                    disabled={loading}
+                    disabled={
+                        loading ||
+                        !form.name ||
+                        !form.email ||
+                        !form.password ||
+                        !form.teamId
+                    }
                 >
                     {loading ? "Creating..." : "Create Manager"}
                 </Button>
+
             </DialogContent>
         </Dialog>
+
     );
 }

@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import  StatusBadge  from "@/components/ui/StatusBadge";
 
 export default function KanbanCard({ request }) {
     return (
@@ -23,8 +23,7 @@ export default function KanbanCard({ request }) {
                     </span>
                 </div>
             </div>
-
-            <Badge variant="outline">{request.status}</Badge>
+            <StatusBadge status={request.status} />
         </Card>
     );
 }

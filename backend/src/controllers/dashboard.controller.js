@@ -35,8 +35,26 @@ export const managerDashboard = asyncHandler(async (req, res) => {
     [team_id]
   );
 
+  // Team info
+  const [[team]] = await pool.query(`SELECT name FROM teams WHERE id = ?`, [
+    team_id,
+  ]);
+
+  // Technician count
+  const [[technicianCount]] = await pool.query(
+    `SELECT COUNT(*) as total 
+   FROM users 
+   WHERE role = 'technician' AND team_id = ?`,
+    [team_id]
+  );
+
   res.status(200).json(
     new ApiResponse(200, {
+      team: {
+        id: team_id,
+        name: team?.name || "Unknown Team",
+        technicianCount: technicianCount.total,
+      },
       stats: {
         equipment: equipmentCount.total,
         openRequests: openRequests.total,

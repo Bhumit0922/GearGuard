@@ -14,6 +14,7 @@ import CreateRequest from "@/pages/user/CreateRequest";
 import Equipment from "@/pages/manager/Equipment";
 import Teams from "@/pages/manager/Teams";
 import Requests from "@/pages/manager/Requests";
+import PreventiveCalendar from "./pages/manager/PreventiveCalendar";
 import RequestDetails from "@/pages/shared/RequestDetails";
 
 import ProtectedRoute from "@/auth/ProtectedRoute";
@@ -36,6 +37,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["manager"]}>
                 <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/manager/calendar"
+            element={
+              <ProtectedRoute allowedRoles={["manager", "technician"]}>
+                <PreventiveCalendar />
               </ProtectedRoute>
             }
           />
@@ -82,6 +92,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["technician"]}>
                 <TechnicianDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/technician/calendar"
+            element={
+              <ProtectedRoute allowedRoles={["technician"]}>
+                <PreventiveCalendar />
               </ProtectedRoute>
             }
           />

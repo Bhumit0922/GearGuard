@@ -52,10 +52,17 @@ export function AuthProvider({ children }) {
 
         try {
             const res = await api.post("/users/refresh", { refreshToken });
-            const { accessToken, user } = res.data.data;
+            const { accessToken } = res.data.data;
+
+            // 🔐 Decode JWT payload
+            const payload = JSON.parse(atob(accessToken.split(".")[1]));
 
             setAccessToken(accessToken);
-            setUser(user); // ✅ FULL USER OBJECT
+            setUser({
+                id: payload.id,
+                role: payload.role,
+                team_id: payload.team_id,
+            });
 
             localStorage.setItem("accessToken", accessToken);
         } catch {
@@ -68,7 +75,6 @@ export function AuthProvider({ children }) {
             setLoading(false);
         }
     };
-
 
     useEffect(() => {
         bootstrapAuth();

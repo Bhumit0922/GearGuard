@@ -10,6 +10,8 @@ import ManagerActions from "@/components/requests/ManagerActions";
 import RequestDetailsSkeleton from "@/components/dashboard/RequestDetailsSkeleton";
 import ErrorState from "@/components/ui/ErrorState";
 import PageHeader from "@/components/PageHeader";
+import StatusBadge from "@/components/ui/StatusBadge";
+
 export default function RequestDetails() {
     const { id } = useParams();
     const { user } = useAuth();
@@ -69,7 +71,8 @@ export default function RequestDetails() {
                     subtitle={`Status: ${request.status}`}
                 />
 
-                <Badge variant="outline">{request.status}</Badge>
+                {/* <Badge variant="outline">{request.status}</Badge> */}
+                <StatusBadge status={request.status} />
             </div>
 
             {/* INFO */}

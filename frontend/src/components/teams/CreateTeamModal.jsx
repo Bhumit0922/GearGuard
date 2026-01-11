@@ -1,4 +1,9 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -16,8 +21,12 @@ export default function CreateTeamModal({ open, onClose, onCreated }) {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent>
-                <h2 className="font-semibold text-lg">Create Team</h2>
+            <DialogContent className="space-y-4">
+                {/* REQUIRED FOR ACCESSIBILITY */}
+                <DialogTitle>Create Team</DialogTitle>
+                <DialogDescription>
+                    Create a new maintenance team.
+                </DialogDescription>
 
                 <Input
                     placeholder="Team name"

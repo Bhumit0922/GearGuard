@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import EmptyState from "@/components/ui/EmptyState";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function UserRequests({ requests }) {
     if (!requests.length) {
@@ -38,7 +39,8 @@ export default function UserRequests({ requests }) {
                         <TableCell className="font-medium">{r.subject}</TableCell>
                         <TableCell>{r.equipment_name}</TableCell>
                         <TableCell>
-                            <Badge variant="outline">{r.status}</Badge>
+                            {/* <Badge variant="outline">{r.status}</Badge> */}
+                            <StatusBadge status={r.status} />
                         </TableCell>
                         <TableCell>{r.technician_name || "—"}</TableCell>
                         <TableCell>

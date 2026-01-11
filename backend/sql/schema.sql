@@ -72,6 +72,19 @@ CREATE TABLE refresh_tokens (
   CONSTRAINT fk_refresh_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_notification_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_refresh_user ON refresh_tokens(user_id);
 CREATE INDEX idx_request_logs_request ON request_logs(request_id);
 CREATE INDEX idx_request_logs_user ON request_logs(changed_by);

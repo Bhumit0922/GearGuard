@@ -98,3 +98,14 @@ export const createRequest = async (payload) => {
     throw err;
   }
 };
+
+export const fetchPreventiveCalendar = async () => {
+  try {
+    const res = await api.get("/requests/calendar");
+    return res.data.data;
+  } catch (err) {
+    toast.error("Failed to load preventive calendar");
+    throw err;
+  }
+};
+

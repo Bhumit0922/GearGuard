@@ -3,6 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { logRequestStatusChange } from "../utils/auditLogger.js";
+import { createNotification } from "../utils/notification.js";
 
 const FINAL_STATUSES = ["Repaired", "Scrap"];
 
@@ -54,6 +55,20 @@ export const createRequest = asyncHandler(async (req, res) => {
       userId,
     ]
   );
+
+  // 🔔 Notify manager(s) of the team
+  const [managers] = await pool.query(
+    `SELECT id FROM users WHERE role = 'manager' AND team_id = ?`,
+    [maintenanceTeamId]
+  );
+
+  for (const m of managers) {
+    await createNotification({
+      userId: m.id,
+      title: "New maintenance request",
+      message: `New request created: "${subject}"`,
+    });
+  }
 
   res
     .status(201)
@@ -228,6 +243,12 @@ export const assignTechnician = asyncHandler(async (req, res) => {
     [technicianId, id]
   );
 
+  await createNotification({
+    userId: technicianId,
+    title: "New task assigned",
+    message: `You have been assigned to request: ${request.subject}`,
+  });
+
   res.status(200).json(new ApiResponse(200, null, "Technician assigned"));
 });
 
@@ -292,6 +313,12 @@ export const updateRequestStatus = asyncHandler(async (req, res) => {
     userId: req.user.id,
   });
 
+  await createNotification({
+    userId: request.created_by,
+    title: "Request status updated",
+    message: `Your request "${request.subject}" move to "${status}"`,
+  });
+
   res.status(200).json(new ApiResponse(200, null, "Status updated"));
 });
 
@@ -351,6 +378,27 @@ export const completeRequest = asyncHandler(async (req, res) => {
     userId: req.user.id,
   });
 
+  // Notify user
+  await createNotification({
+    userId: request.created_by,
+    title: "Request Completed",
+    message: `Your request "${request.subject}" has been completed`,
+  });
+
+  // Notify manager(s)
+  const [managers] = await pool.query(
+    `SELECT id FROM users WHERE role = 'manager' AND team_id = ?`,
+    [request.team_id]
+  );
+
+  for (const m of managers) {
+    await createNotification({
+      userId: m.id,
+      title: "Request completed",
+      message: `Request "${request.subject}" has been completed`,
+    });
+  }
+
   res.status(200).json(new ApiResponse(200, null, "Request completed"));
 });
 
@@ -399,6 +447,22 @@ export const scrapRequest = asyncHandler(async (req, res) => {
     newStatus: "Scrap",
     userId: req.user.id,
   });
+
+  // Notify user
+  await createNotification({
+    userId: request.created_by,
+    title: "Request scrapped",
+    message: `Your request "${request.subject}" has been scrapped`,
+  });
+
+  // Notify technician if assigned
+  if (request.assigned_technician_id) {
+    await createNotification({
+      userId: request.assigned_technician_id,
+      title: "Request scrapped",
+      message: `Request "${request.subject}" was scrapped`,
+    });
+  }
 
   res
     .status(200)
