@@ -13,6 +13,7 @@ import {
 } from "../controllers/request.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
+import { reschedulePreventive } from "../controllers/request.controller.js";
 
 const requestRoute = express.Router();
 
@@ -55,6 +56,13 @@ requestRoute.patch(
   authenticate,
   authorize("manager"),
   scrapRequest
+);
+
+requestRoute.patch(
+  "/:id/reschedule",
+  authenticate,
+  authorize("manager"),
+  reschedulePreventive
 );
 
 requestRoute.get("/:id/logs", authenticate, getRequestLogs);

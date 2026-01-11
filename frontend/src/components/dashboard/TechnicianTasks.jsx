@@ -40,7 +40,7 @@ export default function TechnicianTasks({ requests }) {
                         <TableCell>{r.equipment_name}</TableCell>
                         <TableCell>
                             {/* <Badge variant="outline">{r.status}</Badge> */}
-                            <statusBadge status={r.status} />
+                            <StatusBadge status={r.status} />
                         </TableCell>
                         <TableCell>{r.team_name || "—"}</TableCell>
                         <TableCell>

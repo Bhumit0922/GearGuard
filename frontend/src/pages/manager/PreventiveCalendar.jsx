@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { reschedulePreventive } from "@/api/requests";
+
 
 export default function PreventiveCalendar() {
     const [events, setEvents] = useState([]);
@@ -58,15 +60,26 @@ export default function PreventiveCalendar() {
                     initialView="dayGridMonth"
                     events={events}
                     height="auto"
+
+                    /* ✅ ENABLE DRAG & DROP */
+                    editable
+                    eventDrop={async (info) => {
+                        try {
+                            await reschedulePreventive(
+                                info.event.id,
+                                info.event.startStr
+                            );
+                        } catch {
+                            info.revert(); // rollback UI if API fails
+                        }
+                    }}
+
                     eventClick={handleEventClick}
                     eventContent={(info) => (
                         <div className="space-y-1">
                             <div className="text-xs font-medium">
                                 {info.event.title}
                             </div>
-                            {/* <Badge variant="outline" className="text-[10px]">
-                                {info.event.extendedProps.status}
-                            </Badge> */}
                             <StatusBadge status={info.event.extendedProps.status} />
                         </div>
                     )}

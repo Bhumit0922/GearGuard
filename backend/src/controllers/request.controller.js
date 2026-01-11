@@ -574,3 +574,23 @@ export const getRequestById = asyncHandler(async (req, res) => {
     })
   );
 });
+
+export const reschedulePreventive = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { scheduledDate } = req.body;
+
+  if (req.user.role !== "manager") {
+    throw new ApiError(403, "Only manager can reschedule preventive tasks");
+  }
+
+  await pool.query(
+    `UPDATE maintenance_requests
+     SET scheduled_date = ?
+     WHERE id = ? AND type = 'Preventive'`,
+    [scheduledDate, id]
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Preventive maintenance rescheduled"));
+});

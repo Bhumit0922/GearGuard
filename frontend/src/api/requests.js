@@ -109,3 +109,12 @@ export const fetchPreventiveCalendar = async () => {
   }
 };
 
+export const reschedulePreventive = async (id, scheduledDate) => {
+  try {
+    await api.patch(`/requests/${id}/reschedule`, { scheduledDate });
+    toast.success("Maintenance rescheduled");
+  } catch (err) {
+    toast.error("Failed to reschedule maintenance");
+    throw err;
+  }
+};
