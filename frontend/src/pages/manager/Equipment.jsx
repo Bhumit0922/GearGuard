@@ -38,7 +38,6 @@ export default function Equipment() {
 
     useEffect(() => {
         let isMounted = true;
-        setLoading(true);
         fetchEquipment({ search: search || undefined })
             .then(data => {
                 if (isMounted) setEquipment(data);
