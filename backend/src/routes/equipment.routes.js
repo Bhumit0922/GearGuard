@@ -5,6 +5,9 @@ import {
   getEquipmentById,
   scrapEquipment,
   assignEquipmentTeam,
+  updateEquipment,
+  deleteEquipment,
+  getEquipmentHistory
 } from "../controllers/equipment.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
@@ -29,6 +32,10 @@ equipmentRouter.patch(
 );
 
 equipmentRouter.get("/", authenticate, getAllEquipment);
-equipmentRouter.get("/:id", getEquipmentById);
+equipmentRouter.get("/:id", authenticate, getEquipmentById);
+equipmentRouter.get("/:id/history", authenticate, getEquipmentHistory);
+
+equipmentRouter.put("/:id", authenticate, authorize("manager"), updateEquipment);
+equipmentRouter.delete("/:id", authenticate, authorize("manager"), deleteEquipment);
 
 export default equipmentRouter;

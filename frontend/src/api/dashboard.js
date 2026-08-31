@@ -30,3 +30,13 @@ export const fetchUserDashboard = async () => {
     throw err;
   }
 };
+
+export const exportManagerReport = async () => {
+  try {
+    const res = await api.get("/dashboard/manager/report");
+    return res.data.data;
+  } catch (err) {
+    toast.error("Failed to generate report");
+    throw err;
+  }
+};

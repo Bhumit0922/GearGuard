@@ -1,5 +1,11 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
 import mysql from "mysql2/promise";
+
+console.log("ENV CHECK:");
+console.log("DB_USER:", process.env.DB_USER);
+console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
+console.log("DB_NAME:", process.env.DB_NAME);
 
 // Create a connection pool (recommended for production)
 const pool = mysql.createPool({

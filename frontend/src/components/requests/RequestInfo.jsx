@@ -26,6 +26,20 @@ export default function RequestInfo({ request }) {
                 <p>
                     <strong>Created By:</strong> User #{request.created_by}
                 </p>
+                
+                <p><strong>Priority:</strong> <Badge variant="outline">{request.priority || "Normal"}</Badge></p>
+                {request.due_at && <p><strong>Due:</strong> {new Date(request.due_at).toLocaleString()}</p>}
+                
+                {request.status === 'Repaired' && (
+                    <>
+                        <p><strong>Duration:</strong> {request.duration_hours} hours</p>
+                        <p><strong>Labor Cost:</strong> ${request.labor_cost}</p>
+                        <p><strong>Parts Cost:</strong> ${request.parts_cost}</p>
+                        <p className="col-span-2 text-lg mt-2 border-t pt-2 border-border/50">
+                            <strong>Total Cost:</strong> <span className="text-emerald-500 font-semibold">${Number(request.labor_cost) + Number(request.parts_cost)}</span>
+                        </p>
+                    </>
+                )}
             </div>
         </Card>
     );

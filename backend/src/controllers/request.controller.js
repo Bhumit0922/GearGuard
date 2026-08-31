@@ -17,7 +17,7 @@ const ALLOWED_TRANSITIONS = {
  * Flow: Breakdown / Preventive
  */
 export const createRequest = asyncHandler(async (req, res) => {
-  const { subject, type, equipmentId, scheduledDate } = req.body;
+  const { subject, type, equipmentId, scheduledDate, priority, slaHours } = req.body;
   const userId = req.user.id;
 
   if (!subject || !type || !equipmentId) {
@@ -40,15 +40,24 @@ export const createRequest = asyncHandler(async (req, res) => {
   // Default values
   const status = "New";
 
+  // Calculate due_at based on SLA hours
+  let dueAt = null;
+  if (slaHours) {
+    dueAt = new Date(Date.now() + slaHours * 60 * 60 * 1000);
+  }
+
   // Insert request
   const [result] = await pool.query(
     `INSERT INTO maintenance_requests
-    (subject, type, status, equipment_id, team_id, scheduled_date, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    (subject, type, status, priority, sla_hours, due_at, equipment_id, team_id, scheduled_date, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       subject,
       type,
       status,
+      priority || 'LOW',
+      slaHours || null,
+      dueAt,
       equipmentId,
       maintenanceTeamId,
       scheduledDate || null,
@@ -86,7 +95,7 @@ export const createRequest = asyncHandler(async (req, res) => {
  */
 
 export const getAllRequests = asyncHandler(async (req, res) => {
-  const { status, type } = req.query;
+  const { status, type, search, priority, teamId, technicianId, sort, fromDate, toDate } = req.query;
   const { role, team_id, id } = req.user;
 
   let query = `
@@ -95,7 +104,10 @@ export const getAllRequests = asyncHandler(async (req, res) => {
     r.subject,
     r.status,
     r.type,
+    r.priority,
+    r.due_at,
     r.created_at,
+    r.scheduled_date,
     e.name AS equipment_name,
     t.name AS team_name,
     u.name AS technician_name
@@ -127,7 +139,38 @@ export const getAllRequests = asyncHandler(async (req, res) => {
     values.push(type);
   }
 
-  query += " ORDER BY r.created_at DESC";
+  if (priority) {
+    query += " AND r.priority = ?";
+    values.push(priority);
+  }
+
+  if (search) {
+    query += " AND (r.subject LIKE ? OR r.id = ? OR e.name LIKE ?)";
+    values.push(`%${search}%`, search, `%${search}%`);
+  }
+
+  if (teamId) {
+    query += " AND r.team_id = ?";
+    values.push(teamId);
+  }
+
+  if (technicianId) {
+    query += " AND r.assigned_technician_id = ?";
+    values.push(technicianId);
+  }
+
+  if (fromDate && toDate) {
+    query += " AND r.created_at BETWEEN ? AND ?";
+    values.push(fromDate, toDate);
+  }
+
+  if (sort === 'oldest') {
+    query += " ORDER BY r.created_at ASC";
+  } else if (sort === 'priority') {
+    query += " ORDER BY FIELD(r.priority, 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'), r.created_at DESC";
+  } else {
+    query += " ORDER BY r.created_at DESC";
+  }
 
   const [rows] = await pool.query(query, values);
 
@@ -327,9 +370,9 @@ export const updateRequestStatus = asyncHandler(async (req, res) => {
  */
 export const completeRequest = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { durationHours } = req.body;
+  const { durationHours, laborCost, partsCost } = req.body;
 
-  if (!durationHours) {
+  if (durationHours === undefined || durationHours === null) {
     throw new ApiError(400, "Duration is required");
   }
 
@@ -365,10 +408,29 @@ export const completeRequest = asyncHandler(async (req, res) => {
 
   await pool.query(
     `UPDATE maintenance_requests
-     SET status = 'Repaired', duration_hours = ?
+     SET status = 'Repaired', duration_hours = ?, labor_cost = ?, parts_cost = ?, completed_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [durationHours, id]
+    [durationHours, laborCost || null, partsCost || null, id]
   );
+
+  // AUTO-SCHEDULE NEXT PREVENTIVE MAINTENANCE if applicable
+  if (request.type === 'Preventive') {
+    const [[equipment]] = await pool.query(
+      "SELECT pm_frequency_days FROM equipment WHERE id = ?",
+      [request.equipment_id]
+    );
+
+    if (equipment && equipment.pm_frequency_days) {
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + equipment.pm_frequency_days);
+      const nextDateString = nextDate.toISOString().split('T')[0];
+
+      await pool.query(
+        `UPDATE equipment SET last_maintenance_date = CURRENT_DATE, next_maintenance_date = ? WHERE id = ?`,
+        [nextDateString, request.equipment_id]
+      );
+    }
+  }
 
   // ✅ AUDIT LOG
   await logRequestStatusChange({
@@ -593,4 +655,94 @@ export const reschedulePreventive = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, null, "Preventive maintenance rescheduled"));
+});
+
+/**
+ * UPDATE REQUEST DETAILS
+ */
+export const updateRequest = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { subject, type, equipmentId, scheduledDate, priority, slaHours } = req.body;
+
+  const [[request]] = await pool.query("SELECT * FROM maintenance_requests WHERE id = ?", [id]);
+
+  if (!request) {
+    throw new ApiError(404, "Request not found");
+  }
+
+  // Ensure user is authorized
+  if (req.user.role === "user") {
+    if (request.created_by !== req.user.id) {
+      throw new ApiError(403, "Not authorized to update this request");
+    }
+  } else if (req.user.role === "manager") {
+    if (request.team_id !== req.user.team_id) {
+      throw new ApiError(403, "Not authorized");
+    }
+  } else {
+    throw new ApiError(403, "Technicians cannot update request details");
+  }
+
+  // Auto-fill logic (Equipment → Team) if equipment changed
+  let teamId = request.team_id;
+  if (equipmentId && equipmentId !== request.equipment_id) {
+    const [[equipment]] = await pool.query(
+      `SELECT maintenance_team_id FROM equipment WHERE id = ?`,
+      [equipmentId]
+    );
+    if (!equipment) throw new ApiError(404, "Equipment not found");
+    teamId = equipment.maintenance_team_id;
+  }
+
+  let dueAt = request.due_at;
+  if (slaHours !== undefined) {
+    if (slaHours) {
+      dueAt = new Date(Date.now() + slaHours * 60 * 60 * 1000);
+    } else {
+      dueAt = null;
+    }
+  }
+
+  await pool.query(
+    `UPDATE maintenance_requests 
+     SET subject = COALESCE(?, subject),
+         type = COALESCE(?, type),
+         equipment_id = COALESCE(?, equipment_id),
+         team_id = ?,
+         scheduled_date = COALESCE(?, scheduled_date),
+         priority = COALESCE(?, priority),
+         sla_hours = ?,
+         due_at = ?
+     WHERE id = ?`,
+    [subject, type, equipmentId, teamId, scheduledDate, priority, slaHours !== undefined ? slaHours : request.sla_hours, dueAt, id]
+  );
+
+  res.status(200).json(new ApiResponse(200, null, "Request updated"));
+});
+
+/**
+ * DELETE REQUEST
+ */
+export const deleteRequest = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const [[request]] = await pool.query("SELECT * FROM maintenance_requests WHERE id = ?", [id]);
+
+  if (!request) {
+    throw new ApiError(404, "Request not found");
+  }
+
+  // Only manager or the user who created it (if it's still 'New') can delete
+  if (req.user.role === "user") {
+    if (request.created_by !== req.user.id) throw new ApiError(403, "Not authorized");
+    if (request.status !== "New") throw new ApiError(400, "Can only delete 'New' requests");
+  } else if (req.user.role === "manager") {
+    if (request.team_id !== req.user.team_id) throw new ApiError(403, "Not authorized for this team");
+  } else {
+    throw new ApiError(403, "Not authorized to delete");
+  }
+
+  await pool.query("DELETE FROM maintenance_requests WHERE id = ?", [id]);
+
+  res.status(200).json(new ApiResponse(200, null, "Request deleted"));
 });

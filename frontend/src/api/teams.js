@@ -34,3 +34,25 @@ export const assignTechnicianToTeam = async (teamId, technicianId) => {
     throw err;
   }
 };
+
+export const updateTeam = async (id, data) => {
+  try {
+    const res = await api.patch(`/teams/${id}`, data);
+    toast.success("Team updated successfully");
+    return res.data.data;
+  } catch (err) {
+    toast.error(err?.response?.data?.message || "Failed to update team");
+    throw err;
+  }
+};
+
+export const deleteTeam = async (id) => {
+  try {
+    const res = await api.delete(`/teams/${id}`);
+    toast.success("Team deleted successfully");
+    return res.data;
+  } catch (err) {
+    toast.error(err?.response?.data?.message || "Failed to delete team");
+    throw err;
+  }
+};

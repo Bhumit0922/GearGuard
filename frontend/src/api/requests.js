@@ -1,9 +1,9 @@
 import api from "@/api/axios";
 import { toast } from "sonner";
 
-export const fetchRequests = async () => {
+export const fetchRequests = async (params = {}) => {
   try {
-    const res = await api.get("/requests");
+    const res = await api.get("/requests", { params });
     return res.data.data;
   } catch (err) {
     toast.error(err?.response?.data?.message || "Failed to load requests");
@@ -74,10 +74,11 @@ export const fetchRequestLogs = async (id) => {
 
 /* ---------------- TECHNICIAN ACTIONS ---------------- */
 
-export const completeRequest = async (id, durationHours) => {
+export const completeRequest = async (id, durationHours, partsCost = 0) => {
   try {
     const res = await api.patch(`/requests/${id}/complete`, {
       durationHours,
+      partsCost,
     });
 
     toast.success("Request marked as completed");
@@ -115,6 +116,28 @@ export const reschedulePreventive = async (id, scheduledDate) => {
     toast.success("Maintenance rescheduled");
   } catch (err) {
     toast.error("Failed to reschedule maintenance");
+    throw err;
+  }
+};
+
+export const updateRequest = async (id, data) => {
+  try {
+    const res = await api.put(`/requests/${id}`, data);
+    toast.success("Request updated successfully");
+    return res.data.data;
+  } catch (err) {
+    toast.error(err?.response?.data?.message || "Failed to update request");
+    throw err;
+  }
+};
+
+export const deleteRequest = async (id) => {
+  try {
+    const res = await api.delete(`/requests/${id}`);
+    toast.success("Request deleted successfully");
+    return res.data;
+  } catch (err) {
+    toast.error(err?.response?.data?.message || "Failed to delete request");
     throw err;
   }
 };

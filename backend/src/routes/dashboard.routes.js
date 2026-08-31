@@ -5,6 +5,7 @@ import {
   managerDashboard,
   technicianDashboard,
   userDashboard,
+  generateReport
 } from "../controllers/dashboard.controller.js";
 
 const dashboardRouter = express.Router();
@@ -16,6 +17,13 @@ dashboardRouter.get(
   authenticate,
   authorize("manager"),
   managerDashboard
+);
+
+dashboardRouter.get(
+  "/manager/report",
+  authenticate,
+  authorize("manager"),
+  generateReport
 );
 
 dashboardRouter.get(

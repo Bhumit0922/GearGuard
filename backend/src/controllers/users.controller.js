@@ -106,6 +106,9 @@ export const loginUser = asyncHandler(async (req, res) => {
           name: user.name,
           role: user.role,
           team_id: user.team_id,
+          phone: user.phone,
+          profile_picture_url: user.profile_picture_url,
+          notification_preferences: user.notification_preferences
         },
       },
       "Login successful"
@@ -280,12 +283,99 @@ export const logoutUser = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
 });
 
-// export {
-//   signupUser,
-//   loginUser,
-//   getTechnicians,
-//   createTechnician,
-//   createManager, // 👈 ADD THIS
-//   refreshAccessToken,
-//   logoutUser,
-// };
+/**
+ * GET ALL USERS (Manager only)
+ */
+export const getAllUsers = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT u.id, u.name, u.email, u.role, u.team_id, t.name as team_name 
+     FROM users u 
+     LEFT JOIN teams t ON u.team_id = t.id 
+     ORDER BY u.role, u.name`
+  );
+  res.status(200).json(new ApiResponse(200, rows));
+});
+
+/**
+ * UPDATE USER ROLE/TEAM (Manager only)
+ */
+export const updateUserRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role, teamId } = req.body;
+
+  if (!role) {
+    throw new ApiError(400, "Role is required");
+  }
+
+  const [result] = await pool.query(
+    "UPDATE users SET role = ?, team_id = ? WHERE id = ?",
+    [role, teamId || null, id]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new ApiError(404, "User not found");
+  }
+
+  res.status(200).json(new ApiResponse(200, null, "User updated successfully"));
+});
+
+/**
+ * DELETE USER (Manager only)
+ */
+export const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      throw new ApiError(404, "User not found");
+    }
+
+    res.status(200).json(new ApiResponse(200, null, "User deleted successfully"));
+  } catch (error) {
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      throw new ApiError(400, "Cannot delete user: They have linked records.");
+    }
+    throw error;
+  }
+});
+
+/**
+ * GET CURRENT PROFILE
+ */
+export const getProfile = asyncHandler(async (req, res) => {
+  const [[user]] = await pool.query(
+    "SELECT id, name, email, role, team_id, phone, profile_picture_url, notification_preferences FROM users WHERE id = ?",
+    [req.user.id]
+  );
+  if (!user) throw new ApiError(404, "User not found");
+  res.status(200).json(new ApiResponse(200, user));
+});
+
+/**
+ * UPDATE CURRENT PROFILE
+ */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { name, phone, profilePictureUrl, notificationPreferences, newPassword } = req.body;
+  const userId = req.user.id;
+
+  let query = "UPDATE users SET name = COALESCE(?, name), phone = COALESCE(?, phone), profile_picture_url = COALESCE(?, profile_picture_url), notification_preferences = COALESCE(?, notification_preferences)";
+  const params = [name, phone, profilePictureUrl, notificationPreferences ? JSON.stringify(notificationPreferences) : null];
+
+  if (newPassword) {
+    if (!passwordRegex.test(newPassword)) {
+      throw new ApiError(400, "Password must contain lowercase, uppercase, special character and be at least 8 characters long");
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    query += ", password = ?";
+    params.push(hashedPassword);
+  }
+
+  query += " WHERE id = ?";
+  params.push(userId);
+
+  await pool.query(query, params);
+
+  res.status(200).json(new ApiResponse(200, null, "Profile updated successfully"));
+});

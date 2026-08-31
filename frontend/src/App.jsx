@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 import AuthLayout from "./layouts/AuthLayout";
 import AppLayout from "./layouts/AppLayout";
@@ -16,13 +17,15 @@ import Teams from "@/pages/manager/Teams";
 import Requests from "@/pages/manager/Requests";
 import PreventiveCalendar from "./pages/manager/PreventiveCalendar";
 import RequestDetails from "@/pages/shared/RequestDetails";
+import Profile from "@/pages/shared/Profile";
 
 import ProtectedRoute from "@/auth/ProtectedRoute";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <BrowserRouter>
+        <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
@@ -86,6 +89,15 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/manager/profile"
+            element={
+              <ProtectedRoute allowedRoles={["manager"]}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ---------- TECHNICIAN ---------- */}
           <Route
             path="/technician/dashboard"
@@ -123,6 +135,15 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/technician/profile"
+            element={
+              <ProtectedRoute allowedRoles={["technician"]}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ---------- USER ---------- */}
           <Route
             path="/user/dashboard"
@@ -150,6 +171,15 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/user/profile"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         <Route
@@ -164,7 +194,8 @@ export default function App() {
 
         {/* ================= FALLBACK ================= */}
         <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

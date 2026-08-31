@@ -12,6 +12,9 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   role ENUM('manager', 'technician', 'user') NOT NULL,
   team_id INT NULL,
+  phone VARCHAR(20) NULL,
+  profile_picture_url VARCHAR(255) NULL,
+  notification_preferences JSON NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_user_team FOREIGN KEY (team_id) REFERENCES teams(id)
 );
@@ -26,6 +29,9 @@ CREATE TABLE equipment (
   purchase_date DATE NULL,
   warranty_expiry DATE NULL,
   owner_name VARCHAR(100) NULL,
+  pm_frequency_days INT NULL,
+  last_maintenance_date DATE NULL,
+  next_maintenance_date DATE NULL,
   is_scrapped BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_equipment_team FOREIGN KEY (maintenance_team_id) REFERENCES teams(id)
@@ -36,11 +42,17 @@ CREATE TABLE maintenance_requests (
   subject VARCHAR(255) NOT NULL,
   type ENUM('Corrective', 'Preventive') NOT NULL,
   status ENUM('New', 'In Progress', 'Repaired', 'Scrap') DEFAULT 'New',
+  priority ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'LOW',
   equipment_id INT NOT NULL,
   team_id INT NOT NULL,
   assigned_technician_id INT NULL,
   created_by INT NOT NULL,
   scheduled_date DATE NULL,
+  due_at TIMESTAMP NULL,
+  sla_hours INT NULL,
+  labor_cost DECIMAL(10,2) NULL,
+  parts_cost DECIMAL(10,2) NULL,
+  completed_at TIMESTAMP NULL,
   duration_hours INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -62,6 +74,18 @@ CREATE TABLE request_logs (
   CONSTRAINT fk_log_user FOREIGN KEY (changed_by) REFERENCES users(id)
 );
 
+CREATE TABLE attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  request_id INT NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_url VARCHAR(255) NOT NULL,
+  uploaded_by INT NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_attachment_request FOREIGN KEY (request_id) REFERENCES maintenance_requests(id),
+  CONSTRAINT fk_attachment_user FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+
 CREATE TABLE refresh_tokens (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -77,6 +101,7 @@ CREATE TABLE notifications (
   user_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
+  category ENUM('INFO', 'WARNING', 'URGENT', 'SUCCESS') DEFAULT 'INFO',
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -92,3 +117,4 @@ CREATE INDEX idx_equipment_team ON equipment(maintenance_team_id);
 CREATE INDEX idx_request_team ON maintenance_requests(team_id);
 CREATE INDEX idx_request_status ON maintenance_requests(status);
 CREATE INDEX idx_request_creator ON maintenance_requests(created_by);
+CREATE INDEX idx_attachments_request ON attachments(request_id);

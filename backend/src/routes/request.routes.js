@@ -10,10 +10,12 @@ import {
   getPreventiveCalendar,
   getRequestById,
   getRequestLogs,
+  reschedulePreventive,
+  updateRequest,
+  deleteRequest
 } from "../controllers/request.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
-import { reschedulePreventive } from "../controllers/request.controller.js";
 
 const requestRoute = express.Router();
 
@@ -67,5 +69,8 @@ requestRoute.patch(
 
 requestRoute.get("/:id/logs", authenticate, getRequestLogs);
 requestRoute.get("/:id", authenticate, getRequestById);
+
+requestRoute.put("/:id", authenticate, updateRequest);
+requestRoute.delete("/:id", authenticate, deleteRequest);
 
 export default requestRoute;

@@ -10,6 +10,11 @@ import {
   refreshAccessToken,
   logoutUser,
   createManager,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
+  getProfile,
+  updateProfile
 } from "../controllers/users.controller.js";
 
 const userRouter = express.Router();
@@ -19,6 +24,9 @@ userRouter.post("/login", loginUser);
 
 userRouter.post("/refresh", refreshAccessToken);
 userRouter.post("/logout", logoutUser);
+
+userRouter.get("/profile", authenticate, getProfile);
+userRouter.put("/profile", authenticate, updateProfile);
 
 userRouter.get(
   "/technicians",
@@ -34,5 +42,9 @@ userRouter.post(
 );
 
 userRouter.post("/managers", authenticate, authorize("manager"), createManager);
+
+userRouter.get("/", authenticate, authorize("manager"), getAllUsers);
+userRouter.patch("/:id", authenticate, authorize("manager"), updateUserRole);
+userRouter.delete("/:id", authenticate, authorize("manager"), deleteUser);
 
 export default userRouter;

@@ -63,3 +63,50 @@ export const assignTechnicianToTeam = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, null, "Technician assigned to team"));
 });
+
+/**
+ * UPDATE TEAM (Manager only)
+ */
+export const updateTeam = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+
+  if (!name) {
+    throw new ApiError(400, "Team name is required");
+  }
+
+  const [result] = await pool.query(
+    "UPDATE teams SET name = ? WHERE id = ?",
+    [name, id]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new ApiError(404, "Team not found");
+  }
+
+  res.status(200).json(new ApiResponse(200, null, "Team updated successfully"));
+});
+
+/**
+ * DELETE TEAM (Manager only)
+ */
+export const deleteTeam = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Ideally, ensure no users/equipment are linked before deleting,
+  // or handle constraint errors cleanly.
+  try {
+    const [result] = await pool.query("DELETE FROM teams WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      throw new ApiError(404, "Team not found");
+    }
+
+    res.status(200).json(new ApiResponse(200, null, "Team deleted successfully"));
+  } catch (error) {
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      throw new ApiError(400, "Cannot delete team: There are users or equipment assigned to it.");
+    }
+    throw error;
+  }
+});

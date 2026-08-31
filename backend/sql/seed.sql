@@ -64,13 +64,14 @@ VALUES
 
 -- ===== MAINTENANCE REQUESTS =====
 INSERT INTO maintenance_requests
-(id, subject, type, status, equipment_id, team_id, assigned_technician_id, created_by, scheduled_date)
+(id, subject, type, status, priority, equipment_id, team_id, assigned_technician_id, created_by, scheduled_date)
 VALUES
 (
   11,
   'Oil leakage detected',
   'Corrective',
   'New',
+  'CRITICAL',
   7,
   5,
   NULL,
@@ -82,6 +83,7 @@ VALUES
   'Monthly belt inspection',
   'Preventive',
   'In Progress',
+  'MEDIUM',
   8,
   5,
   26,
